@@ -16,9 +16,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'com.lemmingapex.trilateration:trilateration:1.0.2'
 	implementation 'org.apache.commons:commons-math3:3.6.1'
+
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
+	testImplementation('org.assertj:assertj-core:3.17.2')
 }
 
 test {

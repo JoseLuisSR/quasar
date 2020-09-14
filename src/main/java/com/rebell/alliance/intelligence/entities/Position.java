@@ -6,9 +6,9 @@ public class Position {
 
     private  double y;
 
-    public Position(double[] positions){
-        this.x = positions[0];
-        this.y = positions[1];
+    public Position(double[] points){
+        this.x = points[0];
+        this.y = points[1];
     }
 
     public void setY(double y) {
@@ -26,4 +26,10 @@ public class Position {
     public double getX() {
         return x;
     }
+
+    @Override
+    public String toString(){
+        return x+","+y;
+    }
+
 }

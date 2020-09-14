@@ -22,7 +22,6 @@ public class Satellite extends Spaceship {
         this.message = message;
     }
 
-
     public double getDistance() {
         return distance;
     }
