@@ -56,10 +56,8 @@ public class MessageService {
         List<String> msgPhrases = getMsgPhrases(msgList);
         if(!validateMessagesSize(msgList, msgPhrases.size()))
             throw new MessageException("Tamaño del mensaje incorrecto");
-
-        System.out.println(msgPhrases + " " + msgPhrases.size());
+        
         removeGap(msgList,msgPhrases.size());
-        msgList.stream().forEach( m -> System.out.println(m) );
         String message = completeMessage(msgList);
         if(!validateMessagePhrases(msgPhrases,message))
             throw new MessageException("No se puede conocer el mensaje");
