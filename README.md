@@ -18,7 +18,7 @@ En la vista de paquetes se definen los paquetes que tendrá el componente softwa
 
 La comunicación entre paquetes es unidireccional y solo con la capa siguiente inferior.
 
-## Vista de clases
+### Vista de clases
 
 El diagrama de clases expone las clases necesarias para representar el negocio, los servicios con lógica y reglas de negocio y Controladores para atender la petición HTTP a los end-points.
 
@@ -36,15 +36,55 @@ flujo de comunicación entre capas por medio de interfaces y el principio de inv
 
 Se utilizara Java y el framework Spring Boot para construir el componente Software,
 
-## Vista funcional
+### Vista funcional
 
 El despliegue del componente software es en AWS usando servicios serverless como Lambda y API Gateway con capacidades de alta disponibilidad y escalamiento automático para cumplir con requerimientos no funcionales que requiere el negocio como soportar volumen alto de peticiones a los servicios de Localización de nave y construir mensajes.
 
 ![Screenshot](https://github.com/JoseLuisSR/quasar/blob/master/doc/img/architecture-FunctionView.png?raw=true)
 
-## Despliegue
+La función lambda tendrá el contexto de ejecución de Java 8 y 512 de memoria.
+
+Lambda permite configurar reserva de concurrencia y aprovisionamiento de concurrencia para el despliegue de más instancias de la función lambda.
+Por cuenta de AWS y región se tiene un máximo de 1000 instancias compartidas entre todas las funciones lambda, se puede escalar a 20.000 abriendo
+caso de soporte con AWS.
+
+En API Gateway se especifican los recursos (end-points), operaciones HTTP permitidas y la integración con la función lambda.
+Los recursos deben corresponde con los creados en el proyecto Spring Boot, son:
+
+* /api/v1/topsecret POST
+
+### Vista de Despliegue
+
+Por medio del servicio CloudFormation de infraestructura como código se despliega el componente software en la función lambda y 
+se crea un API Gateway para exponer lo servicios web REST/JSON.
+
+![Screenshot](https://github.com/JoseLuisSR/quasar/blob/master/doc/img/architecture-DeployView.png?raw=true)
+
+Se utilizan Stacks anidados para tener plantilla por recurso AWS para Lambda y API Gateway, dividiendo las responsabilidades y creando plantillas especializadas por recurso de AWS.
+
+Se carga las plantillas y el ejecutable del proyecto Spring Boot (.zip/.jar) a un bucket de S3 y posterior crea el NestStack en CloudFormation ingresando los siguientes parámetros:
+
+* LambdaFunctionName: Nombre a elecciòn para la funciòn lambda.
+* LambdaHandler: Packete y nombre de la clase que contiene la logica para recibir evento del API Gateway.
+* LambdaRuntime: Java 8, lenguaje de programaciòn usa para construir el componente software.
+* LambdaCodeS3Bucket: Nombre del bucket donde se encuentra el ejecutable Java (.zip, .jar).
+* LambdaCodeS3Key: Nombre del ejecutable Java (.zip, .jar).
+* TemplateURLambda: URL del template lambda.yaml en S3 bucket.
+* TemplateURLApiGateway: URL del template apigateway.yaml en S3 bucket.
+
+![Screenshot](https://github.com/JoseLuisSR/quasar/blob/master/doc/img/CloudFormationParameters.png?raw=true)
 
 ## Ejecuciòn 
+
+Las siguiente es la URL del servicio publicado en AWS con API Gateway y Funciòn Lambda:
+
+* Nivel 1: https://bnr3cdugnc.execute-api.us-east-2.amazonaws.com/ist/api/v1/topsecret
+
+En el repositorio encuentra script de ejecuiòn de pruebas HTTP Pots con JMeter el cual tiene la URL configurada del servicio.Limitar la ejecuciòn de las pruebas para no generar cobros.
+
+![Screenshot](https://github.com/JoseLuisSR/quasar/blob/master/doc/img/JMeterRequest.png?raw=true)
+
+![Screenshot](https://github.com/JoseLuisSR/quasar/blob/master/doc/img/JMeterResponse.png?raw=true)
 
 
 

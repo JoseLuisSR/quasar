@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Stack to deploy API Gateway through infrastructure as code.
+Parameters:
+  LambdaFunctionName:
+    ConstraintDescription: must contain only alphanumeric characters.
+    Default: CustomerServerless
+    Description: The name of the Lambda function.
+    MaxLength: 64
+    MinLength: 1
+    Type: String
+
+  LambdaFunctionArn:
+    Description: Lambda function Arn.
+    Type: String
+
+Resources:
+
+  APIGatewayRest:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Join ["",[!Ref LambdaFunctionName, "APIGateway"]]
+      Description: !Join ["",["API Gateway to Lambda Function ",!Ref LambdaFunctionName]]
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  APIGatewayResourceAPI:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref APIGatewayRest
+      ParentId: !GetAtt APIGatewayRest.RootResourceId
+      PathPart: api
+
+  APIGatewayResourceAPIVersion:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref APIGatewayRest
+      ParentId: !Ref APIGatewayResourceAPI
+      PathPart: v1
+
+  APIGatewayResourceAPITopSecret:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref APIGatewayRest
+      ParentId: !Ref APIGatewayResourceAPIVersion
+      PathPart: topsecret
+
+  APIGatewayAPITopSecretPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      OperationName: !Sub ${AWS::AccountId}
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId: !Ref APIGatewayResourceAPITopSecret
+      RestApiId: !Ref APIGatewayRest
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join ["",["arn:aws:apigateway:",!Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !Ref LambdaFunctionArn,"/invocations"]]
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {"application/json":""}
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: { "application/json": "Empty" }
+
+  APIGatewayRestPermissionCustomerPost:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGatewayRest}/*/POST/customer"
+      FunctionName: !Ref LambdaFunctionArn
+    DependsOn:
+    - APIGatewayRest
+    - APIGatewayAPITopSecretPOSTMethod
+
+  APIGatewayModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref APIGatewayRest
+      Schema: {}
+
+  APIGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref APIGatewayRest
+      Description: Lambda API Delployment
+    DependsOn: APIGatewayAPITopSecretPOSTMethod
+
+  APIGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref APIGatewayDeployment
+      RestApiId: !Ref APIGatewayRest
+      StageName: ist
+      Description: API Gateway IST stage
+    DependsOn: APIGatewayDeployment
